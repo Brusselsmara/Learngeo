@@ -3,7 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
-import { QUESTIONS, QUESTIONS_PER_GAME, type Question, type Difficulty } from "@/data/questions";
+import { Slider } from "@/components/ui/slider";
+import { QUESTIONS, type Question, type Difficulty } from "@/data/questions";
+import auFlag from "@/assets/flags/au.png";
+import brFlag from "@/assets/flags/br.png";
+import caFlag from "@/assets/flags/ca.png";
+import deFlag from "@/assets/flags/de.png";
+import frFlag from "@/assets/flags/fr.png";
+import jpFlag from "@/assets/flags/jp.png";
 
 const shuffle = <T,>(arr: T[]) => {
   const a = [...arr];
@@ -26,32 +33,36 @@ const Index = () => {
   });
   const [answered, setAnswered] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
+  const [started, setStarted] = useState(false);
+  const maxQuestions = useMemo(() => QUESTIONS.filter(q => q.difficulty === difficulty).length, [difficulty]);
+  const [questionCount, setQuestionCount] = useState<number>(() => Math.min(10, QUESTIONS.filter(q => q.difficulty === "easy").length));
 
   const gameOver = current >= questions.length;
 
-  const startNewGame = (diff: Difficulty) => {
+  const startNewGame = (diff: Difficulty, count = questionCount) => {
     const pool = QUESTIONS.filter(q => q.difficulty === diff);
-    const picks = shuffle(pool).slice(0, Math.min(QUESTIONS_PER_GAME, pool.length));
+    const picks = shuffle(pool).slice(0, Math.min(count, pool.length));
     setQuestions(picks);
     setCurrent(0);
     setScore(0);
     setAnswered(false);
     setSelected(null);
+    setStarted(true);
   };
 
   useEffect(() => {
     // SEO title
     document.title = "Geography Quiz Game – Countries, Capitals, Flags";
-    startNewGame(difficulty);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    startNewGame(difficulty);
+    // Clamp question count when difficulty changes
+    setQuestionCount((c) => Math.min(c, maxQuestions));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [difficulty]);
+  }, [maxQuestions]);
 
   useEffect(() => {
+    if (!started) return;
     if (gameOver) {
       if (score > highScore) {
         setHighScore(score);
@@ -61,7 +72,7 @@ const Index = () => {
         toast({ title: "Round complete", description: `Your score: ${score}/${questions.length}` });
       }
     }
-  }, [gameOver, score, highScore, questions.length, toast]);
+  }, [gameOver, score, highScore, questions.length, toast, started]);
 
   const currentQuestion = useMemo(() => questions[current], [questions, current]);
 
@@ -109,7 +120,32 @@ const Index = () => {
               </div>
             </CardHeader>
             <CardContent>
-              {!gameOver && currentQuestion && (
+              {!started && (
+                <article className="animate-fade-in">
+                  <div className="grid grid-cols-6 gap-2 mb-4">
+                    <img src={jpFlag} alt="Japan flag mosaic" loading="lazy" className="h-10 w-full object-cover rounded" />
+                    <img src={brFlag} alt="Brazil flag mosaic" loading="lazy" className="h-10 w-full object-cover rounded" />
+                    <img src={deFlag} alt="Germany flag mosaic" loading="lazy" className="h-10 w-full object-cover rounded" />
+                    <img src={auFlag} alt="Australia flag mosaic" loading="lazy" className="h-10 w-full object-cover rounded" />
+                    <img src={frFlag} alt="France flag mosaic" loading="lazy" className="h-10 w-full object-cover rounded" />
+                    <img src={caFlag} alt="Canada flag mosaic" loading="lazy" className="h-10 w-full object-cover rounded" />
+                  </div>
+                  <div className="rounded-lg border p-4 bg-card">
+                    <p className="mb-2 text-sm text-muted-foreground">
+                      Number of questions: <span className="font-medium text-foreground">{questionCount}</span> / {maxQuestions}
+                    </p>
+                    <div className="px-1">
+                      <Slider value={[questionCount]} min={1} max={maxQuestions} step={1} onValueChange={(v) => setQuestionCount(v[0])} />
+                    </div>
+                    <div className="mt-4 flex items-center justify-between">
+                      <div className="text-sm text-muted-foreground">High score: {highScore}</div>
+                      <Button variant="hero" onClick={() => startNewGame(difficulty, questionCount)}>Start game</Button>
+                    </div>
+                  </div>
+                </article>
+              )}
+
+              {!gameOver && currentQuestion && started && (
                 <article>
                   <div className="flex items-center justify-between text-sm text-muted-foreground mb-3">
                     <span>Question {current + 1} / {questions.length}</span>
@@ -157,13 +193,13 @@ const Index = () => {
                 </article>
               )}
 
-              {gameOver && (
+              {gameOver && started && (
                 <div className="text-center py-8">
                   <p className="text-2xl font-semibold mb-1">Round complete!</p>
                   <p className="text-muted-foreground mb-6">You scored {score} / {questions.length}</p>
                   <div className="flex items-center justify-center gap-3">
-                    <Button variant="hero" onClick={() => startNewGame(difficulty)}>Play again</Button>
-                    <Button variant="outline" onClick={() => startNewGame('easy')}>Reset to Easy</Button>
+                    <Button variant="hero" onClick={() => startNewGame(difficulty, questionCount)}>Play again</Button>
+                    <Button variant="outline" onClick={() => { setDifficulty('easy'); startNewGame('easy', questionCount); }}>Reset to Easy</Button>
                   </div>
                 </div>
               )}
