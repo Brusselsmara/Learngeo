@@ -3,8 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
-import { Slider } from "@/components/ui/slider";
 import { QUESTIONS, type Question, type Difficulty } from "@/data/questions";
+import Globe from "@/components/Globe";
+import QuestionCountPicker from "@/components/QuestionCountPicker";
+import FeedbackCard from "@/components/FeedbackCard";
 import auFlag from "@/assets/flags/au.png";
 import brFlag from "@/assets/flags/br.png";
 import caFlag from "@/assets/flags/ca.png";
@@ -106,6 +108,9 @@ const Index = () => {
         </header>
 
         <div className="mx-auto max-w-3xl">
+          <div className="relative mb-8 h-56 rounded-xl overflow-hidden border">
+            <Globe />
+          </div>
           <Card className="shadow-elevated">
             <CardHeader>
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -132,11 +137,9 @@ const Index = () => {
                   </div>
                   <div className="rounded-lg border p-4 bg-card">
                     <p className="mb-2 text-sm text-muted-foreground">
-                      Number of questions: <span className="font-medium text-foreground">{questionCount}</span> / {maxQuestions}
+                      Select number of questions: <span className="font-medium text-foreground">{questionCount}</span> / {maxQuestions}
                     </p>
-                    <div className="px-1">
-                      <Slider value={[questionCount]} min={1} max={maxQuestions} step={1} onValueChange={(v) => setQuestionCount(v[0])} />
-                    </div>
+                    <QuestionCountPicker value={questionCount} onChange={setQuestionCount} max={maxQuestions} />
                     <div className="mt-4 flex items-center justify-between">
                       <div className="text-sm text-muted-foreground">High score: {highScore}</div>
                       <Button variant="hero" onClick={() => startNewGame(difficulty, questionCount)}>Start game</Button>
@@ -178,10 +181,12 @@ const Index = () => {
                   </div>
 
                   {answered && (
-                    <div className="rounded-md bg-secondary p-3 text-sm">
-                      <p className="mb-1 font-medium">{selected === currentQuestion.correctIndex ? 'Correct!' : `Answer: ${currentQuestion.options[currentQuestion.correctIndex]}`}</p>
-                      <p className="text-muted-foreground">{currentQuestion.fact}</p>
-                    </div>
+                    <FeedbackCard
+                      isCorrect={selected === currentQuestion.correctIndex}
+                      title={selected === currentQuestion.correctIndex ? 'Correct!' : `Answer: ${currentQuestion.options[currentQuestion.correctIndex]}`}
+                      fact={currentQuestion.fact}
+                      imageSrc={currentQuestion.imageSrc}
+                    />
                   )}
 
                   <div className="mt-4 flex items-center justify-between">
